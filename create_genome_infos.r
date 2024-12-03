@@ -1,4 +1,4 @@
-# load all versions of the genome and save relevant information for illuminato as csv files, in the generated_data/genome_info folder
+# load all versions of the genome and save relevant information for pylluminator as csv files, in the _generated_data/genome_info folder
 
 # package installation
 # if (!require("BiocManager", quietly = TRUE))
@@ -21,7 +21,7 @@ for(genome_version in c("hg38", "hg19", "mm10", "mm39")) {
   print(paste('getting ', genome_version))
   
   # define and create output directory
-  directory <- paste0(current_directory, "/generated_data/genome_info/", genome_version)
+  directory <- paste0(current_directory, "/_generated_data/genome_info/", genome_version)
   dir.create(directory, showWarnings = FALSE, recursive=TRUE)
 
   # get genome data

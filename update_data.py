@@ -1,4 +1,4 @@
-"""Compress and move every file in folder `generated_data` to the versioned folders `annotations` and `genome_info`"""
+"""Compress and move every file in folder `_generated_data` to the versioned folders `annotations` and `genome_info`"""
 
 import os
 import zipfile
@@ -14,12 +14,12 @@ def read_file_from_zip(zip_path, file_name_in_zip):
         with zipf.open(file_name_in_zip) as f:
             return f.read()
 
-for dir_path, _, filenames in os.walk('generated_data'):
+for dir_path, _, filenames in os.walk('_generated_data'):
 
     if len(filenames) == 0:
         continue
 
-    destination_dir = dir_path.replace('generated_data', '.', 1)
+    destination_dir = dir_path.replace('_generated_data', '.', 1)
 
     os.makedirs(destination_dir, exist_ok=True)
 

@@ -1,15 +1,15 @@
-"""Read data downloaded from SeSAMe annotations and restructure them to match illuminator data structure"""
+"""Read data downloaded from SeSAMe annotations and restructure them to match pylluminator data structure"""
 
-from illuminator.annotations import ArrayType, GenomeVersion, GenomeInfo
-from illuminator.utils import get_resource_folder, download_from_link, column_names_to_snake_case, concatenate_non_na
-from illuminator.utils import get_logger
+from pylluminator.annotations import ArrayType, GenomeVersion, GenomeInfo
+from pylluminator.utils import get_resource_folder, download_from_link, column_names_to_snake_case, concatenate_non_na
+from pylluminator.utils import get_logger
 
 import pandas as pd
 
 LOGGER = get_logger()
 
 class SesameAnnotations:
-    """Extract meaningful information from Sesame data files, and create dataframes with Illuminator format"""
+    """Extract meaningful information from Sesame data files, and create dataframes with pylluminator format"""
 
     def __init__(self, array_type: ArrayType, genome_version: GenomeVersion):
         self.array_type = array_type
@@ -18,7 +18,7 @@ class SesameAnnotations:
         self.manifest = self.load_annotation('manifest')
         self.genome_info = self.load_annotation('genome_info')
         self.gene = self.load_annotation('gene')
-        self.probe_infos = self.make_illuminator_probe_info()
+        self.probe_infos = self.make_pylluminator_probe_info()
 
     def load_annotation(self, kind: str) -> pd.DataFrame | None:
         """Download or read an annotation file. Kind must be 'mask', 'manifest', 'genome_info' or 'gene'"""
@@ -108,12 +108,12 @@ class SesameAnnotations:
         LOGGER.info('loading done\n')
         return df
 
-    def make_illuminator_probe_info(self) -> pd.DataFrame | None:
+    def make_pylluminator_probe_info(self) -> pd.DataFrame | None:
         """Extract useful information from Sesame Manifest, Masks and Genes annotation and merge it in one dataframe
         :return: a pd.DataFrame with IlluminaID as indexes, probes as rows and probes info as columns"""
 
         if self.manifest is None:
-            LOGGER.warning('Make illuminator probe info : provide a manifest first')
+            LOGGER.warning('Make pylluminator probe info : provide a manifest first')
             return None
 
         # select manifest column

@@ -1,10 +1,10 @@
 """Brute force script to try to create manifests for every combination of Array Type * Genome version from SeSAMe annotation"""
 
 import os.path
-from illuminator.annotations import ArrayType, GenomeVersion
+from pylluminator.annotations import ArrayType, GenomeVersion
 from sesame_annotations import SesameAnnotations
 
-root_dir = 'generated_data/annotations'
+root_dir = '_generated_data/annotations'
 os.makedirs(root_dir, exist_ok=True)
 
 for at in ArrayType:
