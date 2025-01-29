@@ -8,3 +8,4 @@ The scripts ``create_manifest.py`` and ``create_genome_infos.r`` will generate t
 The versioned and compressed data used by illuminator is found in folders ``annotations``, ``arrays``, and ``genome_info``.
 To move the generated data to the versioned folders and compress it, run the ``update_data.py`` script.
 
+More details about the data files can be found in the `pylluminator documentation <https://pylluminator.readthedocs.io/en/latest/annotations.html>`_
