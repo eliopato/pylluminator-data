@@ -2,6 +2,8 @@
 
 import os
 import zipfile
+from pylluminator.utils import get_logger
+LOGGER = get_logger()
 
 # Function to read file contents
 def read_file(file_path):
@@ -33,7 +35,7 @@ for dir_path, _, filenames in os.walk('_generated_data'):
             if source_file_content == dest_file_content:
                 continue
 
-        print(f'creating {dest_file} from {source_file}')
+        LOGGER.info(f'creating {dest_file} from {source_file}')
         with zipfile.ZipFile(dest_file, 'w', zipfile.ZIP_DEFLATED) as zipf:
             zipf.write(source_file, arcname=filename)
 

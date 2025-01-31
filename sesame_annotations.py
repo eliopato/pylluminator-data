@@ -1,4 +1,5 @@
 """Read data downloaded from SeSAMe annotations and restructure them to match pylluminator data structure"""
+import os
 
 from pylluminator.annotations import ArrayType, GenomeVersion, GenomeInfo
 from pylluminator.utils import get_resource_folder, download_from_link, column_names_to_snake_case, concatenate_non_na
@@ -8,17 +9,95 @@ import pandas as pd
 
 LOGGER = get_logger()
 
+LINKS = {
+    'mask': {
+        GenomeVersion.HG38: {
+            ArrayType.HUMAN_MSA: 'https://github.com/zhou-lab/InfiniumAnnotationV1/raw/main/Anno/MSA/MSA.hg38.mask.tsv.gz',
+            ArrayType.HUMAN_EPIC_V2: 'https://github.com/zhou-lab/InfiniumAnnotationV1/raw/main/Anno/EPICv2/EPICv2.hg38.mask.tsv.gz',
+            ArrayType.HUMAN_EPIC_PLUS: 'https://github.com/zhou-lab/InfiniumAnnotationV1/raw/main/Anno/EPIC+/EPIC+.hg38.mask.tsv.gz',
+            ArrayType.HUMAN_EPIC: 'https://github.com/zhou-lab/InfiniumAnnotationV1/raw/refs/heads/main/Anno/EPIC/EPIC.hg38.mask.tsv.gz',
+            # todo different formats
+            # ArrayType.HUMAN_450K: 'https://github.com/zhou-lab/InfiniumAnnotationV1/raw/main/Anno/HM450/archive/202209/HM450.hg38.mask.tsv.gz',
+            # ArrayType.HUMAN_27K: 'https://github.com/zhou-lab/InfiniumAnnotationV1/raw/main/Anno/HM27/archive/202209/HM27.hg38.mask.tsv.gz',
+        },
+        GenomeVersion.HG19: {},
+        GenomeVersion.MM10: {
+            ArrayType.MOUSE_MM285: 'https://github.com/zhou-lab/InfiniumAnnotationV1/raw/main/Anno/MM285/N296070/MM285.mm10.mask.tsv.gz'
+        }
+    },
+    'manifest': {
+        GenomeVersion.HG38: {
+            ArrayType.HUMAN_MSA: 'https://github.com/zhou-lab/InfiniumAnnotationV1/raw/main/Anno/MSA/MSA.hg38.manifest.tsv.gz',
+            ArrayType.HUMAN_EPIC_V2: 'https://github.com/zhou-lab/InfiniumAnnotationV1/raw/main/Anno/EPICv2/EPICv2.hg38.manifest.tsv.gz',
+            ArrayType.HUMAN_EPIC_PLUS: 'https://github.com/zhou-lab/InfiniumAnnotationV1/raw/main/Anno/EPIC+/EPIC+.hg38.manifest.tsv.gz',
+            ArrayType.HUMAN_EPIC: 'https://github.com/zhou-lab/InfiniumAnnotationV1/raw/main/Anno/EPIC/EPIC.hg38.manifest.tsv.gz',
+            ArrayType.HUMAN_450K: 'https://github.com/zhou-lab/InfiniumAnnotationV1/raw/main/Anno/HM450/HM450.hg38.manifest.tsv.gz',
+            ArrayType.HUMAN_27K: 'https://github.com/zhou-lab/InfiniumAnnotationV1/raw/main/Anno/HM27/HM27.hg38.manifest.tsv.gz',
+            ArrayType.MAMMAL_40: 'https://github.com/zhou-lab/InfiniumAnnotationV1/raw/main/Anno/Mammal40/Mammal40.hg38.manifest.tsv.gz'
+        },
+        GenomeVersion.HG19: {
+            ArrayType.HUMAN_EPIC_V2: 'https://github.com/zhou-lab/InfiniumAnnotationV1/raw/main/Anno/EPICv2/EPICv2.hg19.manifest.tsv.gz',
+            ArrayType.HUMAN_EPIC: 'https://github.com/zhou-lab/InfiniumAnnotationV1/raw/main/Anno/EPIC/EPIC.hg19.manifest.tsv.gz',
+            ArrayType.HUMAN_450K: 'https://github.com/zhou-lab/InfiniumAnnotationV1/raw/main/Anno/HM450/HM450.hg19.manifest.tsv.gz',
+            ArrayType.HUMAN_27K: 'https://github.com/zhou-lab/InfiniumAnnotationV1/raw/main/Anno/HM27/HM27.hg19.manifest.tsv.gz'
+        },
+        GenomeVersion.MM10: {
+            ArrayType.MOUSE_MM285: 'https://github.com/zhou-lab/InfiniumAnnotationV1/raw/main/Anno/MM285/N296070/MM285.mm10.manifest.tsv.gz'
+        },
+        GenomeVersion.MM39: {
+            ArrayType.MOUSE_MM285: 'https://github.com/zhou-lab/InfiniumAnnotationV1/raw/main/Anno/MM285/MM285.mm39.manifest.tsv.gz'
+        }
+    },
+    'gene': {
+        GenomeVersion.HG38: {
+            ArrayType.HUMAN_MSA: 'https://github.com/zhou-lab/InfiniumAnnotationV1/raw/main/Anno/MSA/MSA.hg38.manifest.gencode.v41.tsv.gz',
+            ArrayType.HUMAN_EPIC_V2: 'https://github.com/zhou-lab/InfiniumAnnotationV1/raw/main/Anno/EPICv2/EPICv2.hg38.manifest.gencode.v41.tsv.gz',
+            ArrayType.HUMAN_EPIC: 'https://github.com/zhou-lab/InfiniumAnnotationV1/raw/main/Anno/EPIC/EPIC.hg38.manifest.gencode.v36.tsv.gz',
+            ArrayType.HUMAN_450K: 'https://github.com/zhou-lab/InfiniumAnnotationV1/raw/main/Anno/HM450/HM450.hg38.manifest.gencode.v36.tsv.gz',
+            ArrayType.HUMAN_27K: 'https://github.com/zhou-lab/InfiniumAnnotationV1/raw/main/Anno/HM27/HM27.hg38.manifest.gencode.v36.tsv.gz'
+        },
+        GenomeVersion.HG19: {
+            ArrayType.HUMAN_EPIC_V2: 'https://github.com/zhou-lab/InfiniumAnnotationV1/raw/main/Anno/EPICv2/EPICv2.hg19.manifest.gencode.v26lift37.tsv.gz',
+            ArrayType.HUMAN_EPIC: 'https://github.com/zhou-lab/InfiniumAnnotationV1/raw/main/Anno/EPIC/EPIC.hg19.manifest.gencode.v26lift37.tsv.gz',
+            ArrayType.HUMAN_450K: 'https://github.com/zhou-lab/InfiniumAnnotationV1/raw/main/Anno/HM450/HM450.hg19.manifest.gencode.v26lift37.tsv.gz',
+            ArrayType.HUMAN_27K: 'https://github.com/zhou-lab/InfiniumAnnotationV1/raw/main/Anno/HM27/HM27.hg19.manifest.gencode.v26lift37.tsv.gz'
+        },
+        GenomeVersion.MM10: {
+            ArrayType.MOUSE_MM285: 'https://github.com/zhou-lab/InfiniumAnnotationV1/raw/main/Anno/MM285/N296070/MM285.mm10.manifest.gencode.vM25.tsv.gz'
+        },
+    },
+    'island_relation': {
+        GenomeVersion.HG38: {
+            ArrayType.HUMAN_MSA: 'https://github.com/zhou-lab/KYCG_knowledgebase_MSA/raw/refs/heads/main/hg38/CGI.20220904.gz',
+            ArrayType.HUMAN_EPIC_V2: 'https://github.com/zhou-lab/KYCG_knowledgebase_EPICv2/raw/refs/heads/main/hg38/CGI.20220904.gz',
+            ArrayType.HUMAN_EPIC: 'https://github.com/zhou-lab/KYCG_knowledgebase_EPIC/raw/refs/heads/main/hg38/CGI.20220904.gz',
+            ArrayType.HUMAN_450K: 'https://github.com/zhou-lab/KYCG_knowledgebase_HM450/raw/refs/heads/main/hg38/CGI.20220904.gz',
+            ArrayType.HUMAN_27K: 'https://github.com/zhou-lab/KYCG_knowledgebase_HM27/raw/refs/heads/main/hg38/CGI.20220904.gz',
+            ArrayType.MAMMAL_40: 'https://github.com/zhou-lab/KYCG_knowledgebase_Mammal40/raw/refs/heads/main/hg38/CGI.20220904.gz'
+        },
+        GenomeVersion.MM10: {
+            ArrayType.MOUSE_MM285: 'https://github.com/zhou-lab/KYCG_knowledgebase_MM285/raw/refs/heads/main/mm10/CGI.20220904.gz'
+        }
+    }
+}
+
 class SesameAnnotations:
     """Extract meaningful information from Sesame data files, and create dataframes with pylluminator format"""
 
-    def __init__(self, array_type: ArrayType, genome_version: GenomeVersion):
+    def __init__(self, array_type: ArrayType, genome_version: GenomeVersion, load_all=True):
+        if load_all:
+            LOGGER.info('Loading SeSAMe annotations')
+
         self.array_type = array_type
         self.genome_version = genome_version
-        self.mask = self.load_annotation('mask')
-        self.manifest = self.load_annotation('manifest')
-        self.genome_info = self.load_annotation('genome_info')
-        self.gene = self.load_annotation('gene')
-        self.probe_infos = self.make_pylluminator_probe_info()
+        if load_all:
+            self.mask = self.load_annotation('mask')
+            self.manifest = self.load_annotation('manifest')
+            self.genome_info = self.load_annotation('genome_info')
+            self.gene = self.load_annotation('gene')
+            self.island_relation = self.load_annotation('island_relation')
+            if self.manifest is not None:
+                self.probe_infos = self.make_pylluminator_probe_info()
 
     def load_annotation(self, kind: str) -> pd.DataFrame | None:
         """Download or read an annotation file. Kind must be 'mask', 'manifest', 'genome_info' or 'gene'"""
@@ -30,50 +109,34 @@ class SesameAnnotations:
             return GenomeInfo('default', self.genome_version)
 
         # now we can handle mask and manifest files, check that the parameter is not something else
-        if kind not in ['mask', 'manifest', 'gene']:
-            LOGGER.warning(f'Unknown annotation {kind}, must be one of `mask`, `manifest`, `gene`')
+        if kind not in LINKS.keys():
+            LOGGER.error(f'Unknown annotation {kind}, must be one of {LINKS.keys()}')
+            return None
+
+        if self.genome_version not in LINKS[kind].keys():
+            LOGGER.error(f'SeSAMe - Unsupported {kind} genome version {self.genome_version}')
+            return None
+
+        if self.array_type not in LINKS[kind][self.genome_version]:
+            LOGGER.error(f'SeSAMe - Unsupported {kind} array type {self.array_type} for genome version {self.genome_version}')
             return None
 
         # get the annotation resource folder
         data_folder = get_resource_folder('tmp')
+        filelink = LINKS[kind][self.genome_version][self.array_type]
+        local_filepath = data_folder.joinpath(filelink.split('/')[-1])
 
-        # build the filenames depending on the array type and genome version
-        if kind == 'gene':
-            # gene files have sub-versions ..
-            gene_file_version = ''
-            if self.genome_version == GenomeVersion.HG38:
-                if self.array_type in [ArrayType.HUMAN_MSA, ArrayType.HUMAN_EPIC_V2]:
-                    gene_file_version = 'v41'
-                elif self.array_type in [ArrayType.HUMAN_450K, ArrayType.HUMAN_27K, ArrayType.HUMAN_EPIC]:
-                    gene_file_version = 'v36'
-            elif self.genome_version == GenomeVersion.HG19:
-                if self.array_type in [ArrayType.HUMAN_EPIC_V2, ArrayType.HUMAN_450K, ArrayType.HUMAN_27K, ArrayType.HUMAN_EPIC]:
-                    gene_file_version = 'v26lift37'
-            elif self.genome_version == GenomeVersion.MM10 and self.array_type == ArrayType.MOUSE_MM285:
-                gene_file_version = 'vM25'
-            if gene_file_version == '':
-                LOGGER.warning(f'Gene information : unsupported version {self.genome_version} / {self.array_type}')
-                return None
-            filename = f'{self.array_type}.{self.genome_version}.manifest.gencode.{gene_file_version}.tsv.gz'
-        else:
-            filename = f'{self.array_type}.{self.genome_version}.{kind}.tsv.gz'
-
-        # file path specificity for mouse array version MM10
-        if self.genome_version == 'mm10':
-            filename = f'N296070/{filename}'
-
-        filepath = data_folder.joinpath(filename)
+        # all the 'cgi' files are called the same no matter the array type/genome version so we need to delete them each time
+        if kind == 'island_relation' and os.path.exists(local_filepath):
+            os.remove(local_filepath)
 
         # if the csv manifest file doesn't exist, download it from sesame repository
-        if not filepath.exists():
-            print(f'file not found in {filepath}')
-            dl_link = f'https://github.com/zhou-lab/InfiniumAnnotationV1/raw/main/Anno/{self.array_type}/{filename}'
-            return_status = download_from_link(dl_link, data_folder, filename)
-            if return_status == -1:
-                return None
+        return_status = download_from_link(filelink, data_folder)
+        if return_status == -1:
+            return None
 
         # now read the downloaded manifest file
-        df = pd.read_csv(str(filepath), delimiter='\t')
+        df = pd.read_csv(str(local_filepath), delimiter='\t')
 
         # uniformization - who likes camel case ?
         df = column_names_to_snake_case(df)
@@ -92,20 +155,19 @@ class SesameAnnotations:
             # turn some columns into categories as it speeds up further processing
             ini_size = len(df)
             df = df.dropna(subset=['illumina_id'])
-            print(f'dropped {ini_size - len(df)} probes with missing illumina ID')
+            LOGGER.info(f'dropped {ini_size - len(df)} probes with missing illumina ID')
             df = df.astype({'illumina_id': 'int', 'type': 'category', 'probe_type': 'category',
                             'channel' :'category', 'chromosome': 'category', 'start': 'Int64', 'end': 'Int64'})
             df = df.set_index('illumina_id')
             df['probe_type'] = df.probe_type.cat.rename_categories({'rs': 'snp'})  # to improve readability
             if 'strand' not in df.columns:
-                print('creating probe strand column')
+                LOGGER.info('creating probe strand column')
                 df['strand'] = '*'
         else:
             df = df.set_index('probe_id')
             if kind == 'mask':
                 df = df.rename(columns={'mask': 'mask_info'})
 
-        LOGGER.info('loading done\n')
         return df
 
     def make_pylluminator_probe_info(self) -> pd.DataFrame | None:
@@ -121,14 +183,25 @@ class SesameAnnotations:
                                   'chromosome', 'strand']]
 
         if self.mask is not None:
-            # select mask column (`mask_uniq` or column `mask_info` to get all  the information)
-            mask = self.mask[['mask_uniq']].rename(columns={'mask_uniq': 'mask_info'})
-            mask.mask_info = mask.mask_info.str.replace(',', ';').replace('"', '')
-            manifest = manifest.join(mask, on='probe_id')
+            if 'mask_uniq' not in self.mask.columns:
+                LOGGER.warning('Make pylluminator probe info : mask missing mask_uniq column, resetting it')
+                # todo handle old mask versions
+                self.mask = None
+            else:
+                # select mask column (`mask_uniq` or column `mask_info` to get all  the information)
+                mask = self.mask[['mask_uniq']].rename(columns={'mask_uniq': 'mask_info'})
+                mask.mask_info = mask.mask_info.str.replace(',', ';').replace('"', '')
+                manifest = manifest.join(mask, on='probe_id')
 
         if self.gene is not None:
             # select genes columns
-            genes = self.gene[['genes_uniq', 'transcript_types']].rename(columns={'genes_uniq': 'genes'})
+            genes = self.gene[['genes_uniq']].rename(columns={'genes_uniq': 'genes'})
             manifest = manifest.join(genes, on='probe_id')
-            manifest.transcript_types = manifest.transcript_types.apply(lambda x: ';'.join(set(str(x).replace('nan', '').split(';'))))
-        return manifest
+            # manifest.transcript_types = manifest.transcript_types.apply(lambda x: ';'.join(set(str(x).replace('nan', '').split(';'))))
+
+        if self.island_relation is not None:
+            self.island_relation['rel'] = self.island_relation['knowledgebase'].str.replace('CGI;', '')
+            self.island_relation = self.island_relation['rel']  # keep only this column
+            # print(self.island_relation)
+
+        return manifest.sort_index()
