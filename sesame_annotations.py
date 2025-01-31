@@ -157,7 +157,8 @@ class SesameAnnotations:
             df = df.dropna(subset=['illumina_id'])
             LOGGER.info(f'dropped {ini_size - len(df)} probes with missing illumina ID')
             df = df.astype({'illumina_id': 'int', 'type': 'category', 'probe_type': 'category',
-                            'channel' :'category', 'chromosome': 'category', 'start': 'Int64', 'end': 'Int64'})
+                            'channel' :'category', 'chromosome': 'category', 'start': 'Int64',
+                            'end': 'Int64', 'address_a': 'Int64', 'address_b': 'Int64'})
             df = df.set_index('illumina_id')
             df['probe_type'] = df.probe_type.cat.rename_categories({'rs': 'snp'})  # to improve readability
             if 'strand' not in df.columns:
@@ -200,8 +201,12 @@ class SesameAnnotations:
             # manifest.transcript_types = manifest.transcript_types.apply(lambda x: ';'.join(set(str(x).replace('nan', '').split(';'))))
 
         if self.island_relation is not None:
-            self.island_relation['rel'] = self.island_relation['knowledgebase'].str.replace('CGI;', '')
-            self.island_relation = self.island_relation['rel']  # keep only this column
+            self.island_relation['cgi'] = self.island_relation['knowledgebase'].str.replace('CGI;', '')
+            self.island_relation = self.island_relation['cgi']  # keep only this column
+            manifest = manifest.join(self.island_relation, on='probe_id')
+            print(manifest)
+        else:
+            print('no island relations')
             # print(self.island_relation)
 
-        return manifest.sort_index()
+        return manifest.sort_index().sort_values('probe_id')
