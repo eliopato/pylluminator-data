@@ -203,6 +203,7 @@ class SesameAnnotations:
         if self.island_relation is not None:
             self.island_relation['cgi'] = self.island_relation['knowledgebase'].str.replace('CGI;', '')
             self.island_relation = self.island_relation['cgi']  # keep only this column
+            self.island_relation = self.island_relation.groupby('probe_id').apply(lambda x: ';'.join(x))
             manifest = manifest.join(self.island_relation, on='probe_id')
             print(manifest)
         else:

@@ -31,7 +31,3 @@ for at in ArrayType:
         if anno_sesame.probe_infos is not None:
             LOGGER.info(f'saving {current_dir}/probe_infos.csv')
             anno_sesame.probe_infos.to_csv(f'{current_dir}/probe_infos.csv')
-
-        if anno_sesame.island_relation is not None:
-            LOGGER.info(f'saving {current_dir}/island_relation.csv')
-            anno_sesame.island_relation.to_csv(f'{current_dir}/island_relation.csv')
