@@ -168,6 +168,17 @@ class SesameAnnotations:
             df = df.set_index('probe_id')
             if kind == 'mask':
                 df = df.rename(columns={'mask': 'mask_info'})
+            if kind == 'gene':
+                # define the probe is in a promoter or gene body
+                def promoter_or_body(dists):
+                    if pd.isnull(dists):
+                        return ''
+                    return ';'.join(set(['p' if abs(int(x)) < 1500 else 'b' for x in str(dists).split(';')]))
+
+                if 'dist_to_tss' in df.columns:
+                    df['promoter_or_body'] = df.dist_to_tss.map(promoter_or_body)
+                else:
+                    df['promoter_or_body'] = ''
 
         return df
 
@@ -196,7 +207,7 @@ class SesameAnnotations:
 
         if self.gene is not None:
             # select genes columns
-            genes = self.gene[['genes_uniq']].rename(columns={'genes_uniq': 'genes'})
+            genes = self.gene[['genes_uniq', 'promoter_or_body']].rename(columns={'genes_uniq': 'genes'})
             manifest = manifest.join(genes, on='probe_id')
             # manifest.transcript_types = manifest.transcript_types.apply(lambda x: ';'.join(set(str(x).replace('nan', '').split(';'))))
 
@@ -205,7 +216,6 @@ class SesameAnnotations:
             self.island_relation = self.island_relation['cgi']  # keep only this column
             self.island_relation = self.island_relation.groupby('probe_id').apply(lambda x: ';'.join(x))
             manifest = manifest.join(self.island_relation, on='probe_id')
-            print(manifest)
         else:
             print('no island relations')
             # print(self.island_relation)
