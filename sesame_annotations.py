@@ -106,7 +106,7 @@ class SesameAnnotations:
 
         # genome info files are handled separately
         if kind == 'genome_info':
-            return GenomeInfo('default', self.genome_version)
+            return GenomeInfo('illumina', self.genome_version)
 
         # now we can handle mask and manifest files, check that the parameter is not something else
         if kind not in LINKS.keys():

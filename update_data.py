@@ -29,6 +29,8 @@ for dir_path, _, filenames in os.walk('_generated_data'):
         source_file = dir_path  + '/' + filename
         dest_file = destination_dir  + '/' + filename + '.zip'
 
+        print(source_file, dest_file)
+
         if os.path.exists(dest_file):
             source_file_content = read_file(source_file)
             dest_file_content = read_file_from_zip(dest_file, filename)

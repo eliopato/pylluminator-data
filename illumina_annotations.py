@@ -36,7 +36,7 @@ class IlluminaAnnotations:
             self.mask = None
             self.probe_infos = None
             return
-        self.genome_info = GenomeInfo('default', genome_version)
+        self.genome_info = GenomeInfo('illumina', genome_version)
         self.mask = self.load_mask()
         self.probe_infos = self.make_pylluminator_probe_info()
 
