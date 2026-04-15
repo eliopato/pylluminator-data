@@ -1,9 +1,9 @@
 # load all versions of the genome and save relevant information for pylluminator as csv files, in the _generated_data/genome_info folder
 
 # package installation
-# if (!require("BiocManager", quietly = TRUE))
-#   install.packages("BiocManager")
-# BiocManager::install("sesame")
+if (!require("BiocManager", quietly = TRUE))
+  install.packages("BiocManager")
+BiocManager::install("sesame")
 
 library('sesame')
 library('sesameData')
@@ -58,4 +58,15 @@ for(genome_version in c("hg38", "hg19", "mm10", "mm39")) {
   # not useful ?
   # write.csv(genomeInfo$cen_info, paste0(directory, '/cen_info.csv'), row.names=FALSE)
 
+}
+
+for(platform in c("HM27","HM450","MSA","EPIC","EPIC+","EPICv2","MM285","Mammal40")) {
+  directory <- paste0(current_directory, "/imputation/", platform)
+
+  tryCatch({
+    imputation <- sesameDataGet(paste0(platform, ".imputationDefault"))
+    imputation <- as.data.frame(imputation)
+    names(imputation) <- sub("^data.","",names(imputation))
+    write.csv(imputation, paste0(directory, "imputation_defaults.csv"))
+  }, error = function(cond) {print(paste(platform, "not in sesameData"))})
 }
