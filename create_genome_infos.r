@@ -67,6 +67,6 @@ for(platform in c("HM27","HM450","MSA","EPIC","EPIC+","EPICv2","MM285","Mammal40
     imputation <- sesameDataGet(paste0(platform, ".imputationDefault"))
     imputation <- as.data.frame(imputation)
     names(imputation) <- sub("^data.","",names(imputation))
-    write.csv(imputation, paste0(directory, "imputation_defaults.csv"))
+    write.csv(imputation, paste0(directory, "_imputation_defaults.csv"))
   }, error = function(cond) {print(paste(platform, "not in sesameData"))})
 }
