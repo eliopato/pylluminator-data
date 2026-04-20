@@ -14,7 +14,7 @@ sesameDataCache() # first time only
 current_directory <- dirname(rstudioapi::getSourceEditorContext()$path)
 # otherwise, manually specify the script location ..
 # current_directory <- "C:/path/to/your/script"
-current_directory = "/home/benjaminl/Documents/pylluminator/pylluminator-data"
+
 print(paste('source directory is', current_directory))
 
 for(genome_version in c("hg38", "hg19", "mm10", "mm39")) {
