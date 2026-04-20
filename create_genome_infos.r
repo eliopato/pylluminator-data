@@ -14,7 +14,7 @@ sesameDataCache() # first time only
 current_directory <- dirname(rstudioapi::getSourceEditorContext()$path)
 # otherwise, manually specify the script location ..
 # current_directory <- "C:/path/to/your/script"
-
+current_directory = "/home/benjaminl/Documents/pylluminator/pylluminator-data"
 print(paste('source directory is', current_directory))
 
 for(genome_version in c("hg38", "hg19", "mm10", "mm39")) {
@@ -61,12 +61,17 @@ for(genome_version in c("hg38", "hg19", "mm10", "mm39")) {
 }
 
 for(platform in c("HM27","HM450","MSA","EPIC","EPIC+","EPICv2","MM285","Mammal40")) {
-  directory <- paste0(current_directory, "/imputation/", platform)
+  imputation_dir <- paste0(current_directory, "/imputation/", platform)
+  liftover_dir <- paste0(current_directory, "/liftover/", platform)
 
   tryCatch({
+    address <- sesameDataGet(paste0(platform, ".address"))
+    address <- as.data.frame(address$ordering)
+    write.csv(address, paste0(liftover_dir, "_address.csv"))
+
     imputation <- sesameDataGet(paste0(platform, ".imputationDefault"))
     imputation <- as.data.frame(imputation)
     names(imputation) <- sub("^data.","",names(imputation))
-    write.csv(imputation, paste0(directory, "_imputation_defaults.csv"))
+    write.csv(imputation, paste0(imputation_dir, "_imputation_defaults.csv"))
   }, error = function(cond) {print(paste(platform, "not in sesameData"))})
 }
